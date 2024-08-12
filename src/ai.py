@@ -1,9 +1,9 @@
-from helpers import load_data, get_next_gameweek_id
-from notify import send_email, html_response
+from .helpers import load_data, get_next_gameweek_id
+from .notify import send_email, html_response
 from random import shuffle
 from time import time
 import json
-import variables
+from . import variables
 import numpy as np
 
 

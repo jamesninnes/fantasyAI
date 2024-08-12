@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "fantasyai"
+version = "0.1.0"
+description = ""
+authors = ["James Ninnes <james.ninnes@gmail.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10.0"
+requests = "^2.32.3"
+numpy = "^2.0.1"
+pandas = "^2.2.2"
+scikit-learn = "^1.5.1"
+matplotlib = "^3.9.1"
+seaborn = "^0.13.2"
+beautifulsoup4 = "^4.12.3"
+lxml = "^5.2.2"
+aiohttp = "^3.10.0"
+asyncio = "^3.4.3"
+tqdm = "^4.66.5"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^8.3.2"
+flake8 = "^6.0.0"
+
+[tool.poetry.scripts]
+fantasyai = "src.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

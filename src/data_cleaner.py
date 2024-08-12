@@ -1,5 +1,5 @@
-from helpers import save_data, load_data, get_next_gameweek_id
-import variables
+from .helpers import save_data, load_data, get_next_gameweek_id
+from . import variables
 
 
 # global variables
@@ -8,10 +8,6 @@ all_seasons = variables.ALL_SEASONS
 
 
 def clean_players_data():
-    """
-    Cleans the data for all the players.
-    """
-
     # load the players data
     all_players = load_data("players.json", "data/original")
 
@@ -24,7 +20,6 @@ def clean_players_data():
 
     # only keep the required headers and remove the unwanted information
     for player in all_players:
-
         # remove unwanted keys from the player's data
         player = {header: player[header] for header in headers}
 
@@ -35,22 +30,21 @@ def clean_players_data():
         # convert floats casted into a string to floats
         player["points_per_game"] = float(player["points_per_game"])
 
-        # divide stats according to the season
-        stats_headers = ["minutes", "total_points",
-                         "points_per_game", "now_cost", "history"]
+        # create a single season entry for the current season
+        player_season_stats = {
+            # Assuming the first season in all_seasons is the current one
+            "season": all_seasons[0],
+            "minutes": player["minutes"],
+            "total_points": player["total_points"],
+            "points_per_game": player["points_per_game"],
+            "now_cost": player["now_cost"],
+            "history": player["history"]
+        }
 
-        for season in all_seasons:
-            player_season_stats = {"season": season}
-            for header in stats_headers:
-                player_season_stats[header] = player[header]
-                del player[header]
-
-        player["seasons"] = [player_season_stats]
-
-        # calculate the net points only, remove the playing points
-        for season in player["seasons"]:
+        # calculate the net points only if history is available
+        if player_season_stats["history"]:
             player_gw_history = []
-            for count, gw in enumerate(season["history"][::-1]):
+            for count, gw in enumerate(player_season_stats["history"][::-1]):
                 if count < 5:
                     if gw["minutes"] >= 60:
                         net_points = gw["total_points"] - 2
@@ -59,18 +53,31 @@ def clean_players_data():
                     else:
                         net_points = gw["total_points"]
                     player_gw_history.append(net_points)
+            player_season_stats["gw_history"] = player_gw_history
+        else:
+            player_season_stats["gw_history"] = []
 
-        season["gw_history"] = player_gw_history
-        del season["history"]
+        del player_season_stats["history"]
+
+        player["seasons"] = [player_season_stats]
+
+        # remove the stats that are now in the seasons list
+        for key in ["minutes", "total_points", "points_per_game", "now_cost", "history"]:
+            del player[key]
 
         filtered_players.append(player)
 
-    # only retain the players who have played atleast one minute in the season
+    # only retain the players who have played at least one minute in the season
     filtered_players = [player for player in filtered_players if (
-        player["seasons"][0]["minutes"] > 0 and player["seasons"][0]["total_points"] > 0 and len(player["seasons"][0]["gw_history"]) != 0)]
+        player["seasons"][0]["minutes"] > 0 and
+        player["seasons"][0]["total_points"] > 0
+    )]
 
     # save the data in a JSON file
     save_data(filtered_players, "filtered_players.json", "data")
+
+    print(
+        f"Filtered {len(filtered_players)} players out of {len(all_players)} total players.")
 
 
 def clean_teams_data():
@@ -107,7 +114,8 @@ def clean_fixtures_data():
     all_fixtures = load_data("fixtures.json", "data/original")
 
     # define headers that we need to keep
-    headers = headers = ["event", "finished", "team_a", "team_a_difficulty", "team_h", "team_h_difficulty"]
+    headers = headers = ["event", "finished", "team_a",
+                         "team_a_difficulty", "team_h", "team_h_difficulty"]
 
     # list to store the filtered information
     filtered_fixtures = []
@@ -120,16 +128,21 @@ def clean_fixtures_data():
             filtered_fixtures.append(fixture)
 
     # only retain the fixtures that are yet to take place
-    filtered_fixtures = [fixture for fixture in filtered_fixtures if fixture['event'] >= next_event]
+    filtered_fixtures = [
+        fixture for fixture in filtered_fixtures if fixture['event'] >= next_event]
 
     # save the data in a JSON file
     save_data(filtered_fixtures, "filtered_fixtures.json", "data")
 
 
-if __name__ == "__main__":
+def main():
     clean_players_data()
     print('Cleaned Players data.\n')
     clean_teams_data()
     print('Cleaned Teams data.\n')
     clean_fixtures_data()
     print('Cleaned Fixtures data.')
+
+
+if __name__ == "__main__":
+    main()

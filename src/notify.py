@@ -1,9 +1,9 @@
-from helpers import save_data, load_data, get_next_gameweek_id
+from .helpers import save_data, load_data, get_next_gameweek_id
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import fileinput
-import variables
+from . import variables
 import smtplib
 import ssl
 import os
@@ -36,7 +36,8 @@ def get_deadline(gameweeks=gameweeks):
 
     now = datetime.utcnow()
     for gameweek in gameweeks:
-        next_deadline_date = datetime.strptime(gameweek['deadline_time'], '%Y-%m-%dT%H:%M:%SZ')
+        next_deadline_date = datetime.strptime(
+            gameweek['deadline_time'], '%Y-%m-%dT%H:%M:%SZ')
         if next_deadline_date > now:
             break
 
@@ -54,7 +55,8 @@ def get_gameweek(gameweeks=gameweeks):
 
     now = datetime.utcnow()
     for gameweek in gameweeks:
-        next_deadline_date = datetime.strptime(gameweek['deadline_time'], '%Y-%m-%dT%H:%M:%SZ')
+        next_deadline_date = datetime.strptime(
+            gameweek['deadline_time'], '%Y-%m-%dT%H:%M:%SZ')
         if next_deadline_date > now:
             break
 

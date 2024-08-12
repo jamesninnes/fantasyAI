@@ -7,7 +7,7 @@ import json
 import os
 import sys
 import requests
-from helpers import save_data, get_next_gameweek_id
+from .helpers import save_data, get_next_gameweek_id
 
 
 def download_players_data():
@@ -16,13 +16,15 @@ def download_players_data():
     """
 
     # load the player specific data from the FPL RestAPI Endpoint
-    data = json.loads(requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').text)
+    data = json.loads(requests.get(
+        'https://fantasy.premierleague.com/api/bootstrap-static/').text)
     players = data['elements']
 
     for player in players:
         player_id = player['id']
         print(f'Downloading data for player: {player_id}')
-        data = json.loads(requests.get(f'https://fantasy.premierleague.com/api/element-summary/{player_id}/').text)
+        data = json.loads(requests.get(
+            f'https://fantasy.premierleague.com/api/element-summary/{player_id}/').text)
         player['history'] = data['history']
 
     # save the data in a JSON file
@@ -35,7 +37,8 @@ def download_teams_data():
     """
 
     # load the team specific data from the FPL RestAPI Endpoint
-    data = json.loads(requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').text)
+    data = json.loads(requests.get(
+        'https://fantasy.premierleague.com/api/bootstrap-static/').text)
     teams = data['teams']
 
     # save the data in a JSON file
@@ -48,7 +51,8 @@ def download_fixtures_data():
     """
 
     # load the fixture specific data from the FPL RestAPI Endpoint
-    fixtures = json.loads(requests.get('https://fantasy.premierleague.com/api/fixtures/').text)
+    fixtures = json.loads(requests.get(
+        'https://fantasy.premierleague.com/api/fixtures/').text)
 
     # save the data in a JSON file
     save_data(fixtures, 'fixtures.json', 'data/original')
@@ -60,7 +64,8 @@ def download_gameweeks_data():
     """
 
     # load the fixture specific data from the FPL RestAPI Endpoint
-    data = json.loads(requests.get('https://fantasy.premierleague.com/api/bootstrap-static/').text)
+    data = json.loads(requests.get(
+        'https://fantasy.premierleague.com/api/bootstrap-static/').text)
     gameweeks = data['events']
 
     # save the data in a JSON file
@@ -80,9 +85,11 @@ def download_users_team_data(user_team_id, recent_gw_id):
     save_data(user_team, 'user_team.json', 'data/original')
 
 
-if __name__ == '__main__':
-
-    user_team_id = sys.argv[1]
+def main(user_team_id=None):
+    if user_team_id is None:
+        user_team_id = os.getenv('TEAM_ID')
+        if user_team_id is None:
+            raise ValueError("TEAM_ID environment variable is not set")
 
     download_players_data()
     download_fixtures_data()
@@ -91,3 +98,7 @@ if __name__ == '__main__':
 
     recent_gw_id = get_next_gameweek_id() - 1
     download_users_team_data(user_team_id, recent_gw_id)
+
+
+if __name__ == '__main__':
+    main()

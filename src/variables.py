@@ -1,4 +1,4 @@
-from helpers import load_data
+from .helpers import load_data
 from datetime import datetime, timedelta
 import json
 import os
@@ -123,4 +123,4 @@ PASSWORD = os.environ.get("GMAIL_PASS")
 NOTIFY_BEFORE = 4
 
 # user's team id
-TEAM_ID = 2087820
+TEAM_ID = 4924351
