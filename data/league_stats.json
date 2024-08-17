@@ -1,9 +1,9 @@
 {
   "2020-21": {
-    "all_players_effective_total_points": 0,
-    "all_players_minutes": 620891,
-    "total_players": 404,
-    "avg_effective_total_points_per_player": 0.0,
-    "avg_minutes_per_player": 0
+    "all_players_effective_total_points": 38,
+    "all_players_minutes": 1948,
+    "total_players": 31,
+    "avg_effective_total_points_per_player": 1.2258064516129032,
+    "avg_minutes_per_player": 62.83870967741935
   }
 }

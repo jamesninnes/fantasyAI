@@ -1,5 +1,5 @@
 from .helpers import load_data, get_next_gameweek_id
-from .notify import send_email, html_response
+from .notify import notify
 from random import shuffle
 from time import time
 import json
@@ -117,12 +117,15 @@ def value_in_range(player1, player2):
     a = max(player1["final_value"], player2["final_value"])
     b = min(player1["final_value"], player2["final_value"])
 
+    if a == 0:
+        return [True, player1 if player1["final_value"] >= player2["final_value"] else player2]
+
     ans = (a - b) * 100 / a
 
     if ans <= limit["final_value_limit"]:
-        return [True, player1 if max(player1["final_value"], player2["final_value"]) == player1["final_value"] else player2]
+        return [True, player1 if player1["final_value"] >= player2["final_value"] else player2]
     else:
-        return [False, player1 if max(player1["final_value"], player2["final_value"]) == player1["final_value"] else player2]
+        return [False, player1 if player1["final_value"] >= player2["final_value"] else player2]
 
 
 def budget_in_range(amount1, amount2):
@@ -152,28 +155,33 @@ def value_points_in_range(player1, player2):
     a = max(player1["value_points"], player2["value_points"])
     b = min(player1["value_points"], player2["value_points"])
 
+    if a == 0:
+        return [True, player1 if player1["value_points"] >= player2["value_points"] else player2]
+
     ans = (a - b) * 100 / a
 
     if ans <= limit["value_points_limit"]:
-        return [True, player1 if max(player1["value_points"], player2["value_points"]) == player1["value_points"] else player2]
+        return [True, player1 if player1["value_points"] >= player2["value_points"] else player2]
     else:
-        return [False, player1 if max(player1["value_points"], player2["value_points"]) == player1["value_points"] else player2]
+        return [False, player1 if player1["value_points"] >= player2["value_points"] else player2]
 
 
 def consistency_in_range(player1, player2):
     """
     Compares the `consistency` of two players and returns True if they are within a calculated range.
     """
-
     a = max(player1["consistency_overall"], player2["consistency_overall"])
     b = min(player1["consistency_overall"], player2["consistency_overall"])
+
+    if a == 0:
+        return [True, player1 if player1["consistency_overall"] >= player2["consistency_overall"] else player2]
 
     ans = (a - b) * 100 / a
 
     if ans <= limit["consistency_limit"]:
-        return [True, player1 if max(player1["consistency_overall"], player2["consistency_overall"]) == player1["consistency_overall"] else player2]
+        return [True, player1 if player1["consistency_overall"] >= player2["consistency_overall"] else player2]
     else:
-        return [False, player1 if max(player1["consistency_overall"], player2["consistency_overall"]) == player1["consistency_overall"] else player2]
+        return [False, player1 if player1["consistency_overall"] >= player2["consistency_overall"] else player2]
 
 
 def player_with_easy_fixtures(player1, player2):
@@ -274,7 +282,10 @@ def select_player_from(position, final_team, configuration, budget, team_players
             while position[i] in final_team:
                 i += 1
 
-            return selected_players[i]
+            if i < len(position):
+                return position[i]
+            else:
+                return None
 
         else:
             if value_in_range(selected_players[0], selected_players[1])[0]:
@@ -472,12 +483,9 @@ def main():
         print(transfer['g/l'])
         print('-------')
 
-    # generate response to be sent
-    response = html_response(transfers)
-
-    # send email
-    send_email(response)
-    print(f"Email sent.")
+    # send notification
+    notify(transfers)
+    print(f"Notification sent.")
 
 
 if __name__ == "__main__":

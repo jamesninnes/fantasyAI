@@ -1,18 +1,10 @@
-from .helpers import save_data, load_data, get_next_gameweek_id
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from .helpers import load_data
 from datetime import datetime, timedelta
-import fileinput
 from . import variables
-import smtplib
-import ssl
-import os
+import requests
 import json
 
-
 gameweeks = load_data("gameweeks.json", "data/original")
-# with open(f'data/gameweeks.json', 'r') as f:
-#     gameweeks = json.load(f)
 
 
 def get_cron_date(date):
@@ -63,113 +55,50 @@ def get_gameweek(gameweeks=gameweeks):
     return gameweek['id']
 
 
-def html_response(transfers):
+def create_notification_content(transfers):
     '''
-    Creates a HTML response to be sent through email.
+    Creates a phone-friendly notification content.
     '''
+    content = f"Fantasy AI - Gameweek {get_gameweek()}\n\n"
+    content += "Potential Transfers:\n"
 
-    style = '''
-        <style>
-            body {
-                font-family: arial, sans-serif;
-            }
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            .header {
-                background: #37003c88;
-                color: #ffffff;
-            }
-            td, th {
-                border: 1px solid #dddddd;
-                text-align: left;
-                padding: 8px;
-            }
-            tr:nth-child(even) {
-                background: #eeeeee;
-            }
-            .btn {
-                font-family: Arial, sans-serif;
-                background: #37003c;
-                border: none;
-                color: #ffffff;
-                padding: 8px 16px;
-                text-decoration: none;
-                display: inline-block;
-                cursor: pointer;
-                border-radius: 4px;
-            }
-        </style>
-    '''
-
-    html = ''
     for transfer in transfers:
-        html += f'''
-            <tr>
-                <td>{transfer['out']['name'].title()}<small>[£{transfer['out']['cost']}]</small></td>
-                <td>{transfer['in']['name'].title()}<small>[£{transfer['in']['cost']}]</small></td>
-                <td>{transfer['points']}</td>
-                <td>{transfer['g/l']}</td>
-            </tr>
-        '''
+        content += f"OUT: {transfer['out']['name'].title()} (£{transfer['out']['cost']})\n"
+        content += f"IN: {transfer['in']['name'].title()} (£{transfer['in']['cost']})\n"
+        content += f"Points: {transfer['points']} | Gain/Loss: {transfer['g/l']}\n\n"
 
-    response = f'''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            {style}
-        </head>
-        <body>
-            <p>Hi Ravgeet, </p>
-            <p>This is <b>Fantasy AI</b>. Hope you had a great last gameweek and ready to fire again this time. After running through the data, I have done the following analysis for gameweek {get_gameweek()}.</p>
-            <h3>Potential Transfers</h3>
-            <table>
-                <tr>
-                    <th>Out</th>
-                    <th>In</th>
-                    <th>Points</th>
-                    <th>Gain/Loss</th>
-                </tr>
-                {html}
-            </table>
-            <br>
-            <h3>Important Stats</h3>
-            <p>Next <b>deadline</b> is <b>{get_deadline()}</b></p>
-            <br>
-            <a href="https://fantasy.premierleague.com/entry/{variables.TEAM_ID}/event/{get_gameweek()-1}" class="btn">Manage your team</a>
-        </body>
-        </html>
+    content += f"Deadline: {get_deadline()}\n"
+    content += f"Manage your team: https://fantasy.premierleague.com/entry/{variables.TEAM_ID}/event/{get_gameweek()-1}"
+
+    return content
+
+
+def send_notification(content):
     '''
-
-    return response
-
-
-def send_email(content):
+    Sends a notification using ntfy.sh.
     '''
-    Sends an email to the user.
+    url = os.environ.get('NTFY_URL', 'https://ntfy.sh/fantasy')
+    headers = {
+        "Title": f"Fantasy AI - GW {get_gameweek()}",
+        "Tags": "soccer",
+        "Priority": "default"
+    }
+
+    response = requests.post(
+        url, data=content.encode('utf-8'), headers=headers)
+    if response.status_code == 200:
+        print("Notification sent successfully")
+    else:
+        print(
+            f"Failed to send notification. Status code: {response.status_code}")
+
+
+def notify(transfers):
     '''
-
-    sender_email = variables.SENDER_EMAIL
-    receiver_email = variables.RECEIVER_EMAIL
-    password = variables.PASSWORD
-
-    message = MIMEMultipart('alternative')
-    message['Subject'] = f'Fantasy AI - Gameweek {get_gameweek()}'
-    message['From'] = sender_email
-    message['To'] = receiver_email
-
-    # turn these into html MIMEText objects
-    part = MIMEText(content, 'html')
-
-    # add HTML part to MIMEMultipart message
-    message.attach(part)
-
-    # create secure connection with server and send email
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
+    Creates and sends a notification with transfer suggestions.
+    '''
+    content = create_notification_content(transfers)
+    send_notification(content)
 
 
 if __name__ == '__main__':
